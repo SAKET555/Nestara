@@ -1,10 +1,18 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Menu, X, Sun, Building2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Menu, X, Sun, Building2, User } from "lucide-react";
 import { themeChange } from "theme-change";
+import { useAuth } from "../../context/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    navigate('/');
+    await signOut();
+  };
 
   useEffect(() => {
     themeChange(false);
@@ -83,19 +91,41 @@ const Navbar = () => {
             </div>
 
             {/* Auth Buttons */}
-            <Link
-              to="/login"
-              className="btn btn-ghost hidden sm:inline-flex text-sm font-medium"
-            >
-              Log In
-            </Link>
+            {user ? (
+              <div className="dropdown dropdown-end">
+                <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
+                  <div className="w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                    {user.user_metadata?.full_name ? user.user_metadata.full_name[0].toUpperCase() : <User className="h-6 w-6" />}
+                  </div>
+                </div>
+                <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                  <li>
+                    <Link to="/dashboard" className="justify-between">
+                      Dashboard
+                      <span className="badge">New</span>
+                    </Link>
+                  </li>
+                  <li><Link to="/settings">Settings</Link></li>
+                  <li><button onClick={handleLogout}>Logout</button></li>
+                </ul>
+              </div>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="btn btn-ghost hidden sm:inline-flex text-sm font-medium"
+                >
+                  Log In
+                </Link>
 
-            <Link
-              to="/signup"
-              className="btn btn-primary text-white px-6 rounded-full text-sm font-semibold shadow-lg hover:scale-105 transition-transform duration-300"
-            >
-              Get Started
-            </Link>
+                <Link
+                  to="/signup"
+                  className="btn btn-primary text-white px-6 rounded-full text-sm font-semibold shadow-lg hover:scale-105 transition-transform duration-300"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

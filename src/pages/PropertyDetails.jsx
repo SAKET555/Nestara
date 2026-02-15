@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { useParams } from 'react-router-dom';
 import { MapPin, Bed, Bath, Square, Calendar, CheckCircle } from 'lucide-react';
 
@@ -8,16 +9,25 @@ const PropertyDetails = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`http://localhost:5000/api/properties/${id}`)
-            .then(res => res.json())
-            .then(data => {
+        const fetchProperty = async () => {
+            try {
+                // Fetch property and join with agent profile
+                const { data, error } = await supabase
+                    .from('properties')
+                    .select('*, agent:agent_id(*)') // Join with profiles table
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
                 setProperty(data);
+            } catch (error) {
+                console.error("Error fetching property:", error.message);
+            } finally {
                 setLoading(false);
-            })
-            .catch(err => {
-                console.error("Error fetching property:", err);
-                setLoading(false);
-            });
+            }
+        };
+
+        fetchProperty();
     }, [id]);
 
     if (loading) return <div className="text-center py-20"><span className="loading loading-spinner loading-lg"></span></div>;
@@ -28,7 +38,7 @@ const PropertyDetails = () => {
             {/* Image Gallery */}
             <div className="h-[50vh] md:h-[60vh] relative group">
                 <img
-                    src={property.images[0]}
+                    src={property.image}
                     alt={property.title}
                     className="w-full h-full object-cover"
                 />
@@ -98,13 +108,19 @@ const PropertyDetails = () => {
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24">
                             <div className="flex items-center space-x-4 mb-6">
-                                <img
-                                    src={property.agent.image}
-                                    alt={property.agent.name}
-                                    className="w-16 h-16 rounded-full object-cover border-2 border-blue-500"
-                                />
+                                {property.agent?.avatar_url ? (
+                                    <img
+                                        src={property.agent.avatar_url}
+                                        alt={property.agent.full_name || 'Agent'}
+                                        className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+                                    />
+                                ) : (
+                                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl border-2 border-primary">
+                                        {property.agent?.full_name ? property.agent.full_name[0] : 'A'}
+                                    </div>
+                                )}
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900">{property.agent.name}</h3>
+                                    <h3 className="text-lg font-bold text-gray-900">{property.agent?.full_name || 'Nestara Agent'}</h3>
                                     <p className="text-gray-500 text-sm">Real Estate Agent</p>
                                 </div>
                             </div>
@@ -113,32 +129,32 @@ const PropertyDetails = () => {
                                 <input
                                     type="text"
                                     placeholder="Your Name"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                                 />
                                 <input
                                     type="email"
                                     placeholder="Your Email"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                                 />
                                 <input
                                     type="tel"
                                     placeholder="Your Phone"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                                 />
                                 <textarea
                                     rows="4"
                                     placeholder="I am interested in this property..."
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                                 ></textarea>
-                                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors shadow-md">
+                                <button className="w-full btn btn-primary text-white font-bold py-3 rounded-lg shadow-md">
                                     Send Message
                                 </button>
                             </form>
 
                             <div className="mt-6 text-center">
                                 <p className="text-gray-500 text-sm">or call</p>
-                                <a href={`tel:${property.agent.phone}`} className="text-lg font-bold text-blue-600 hover:underline">
-                                    {property.agent.phone}
+                                <a href="tel:+1234567890" className="text-lg font-bold text-primary hover:underline">
+                                    +1 (555) 123-4567
                                 </a>
                             </div>
                         </div>
